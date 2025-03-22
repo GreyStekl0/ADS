@@ -3,27 +3,39 @@ package labs.lab1
 import kotlin.random.Random
 
 inline fun <reified T : Number> increasingSequence(arr: Array<T>): Array<T> {
-    for (i in arr.indices) {
-        arr[i] =
-            when (T::class) {
-                Int::class -> i as T
-                Double::class -> i.toDouble() as T
-                else -> throw IllegalArgumentException("Unsupported type")
+    when (T::class) {
+        Int::class -> {
+            for (i in arr.indices) {
+                arr[i] = i as T
             }
+        }
+
+        Double::class -> {
+            for (i in arr.indices) {
+                arr[i] = i.toDouble() as T
+            }
+        }
+
+        else -> throw IllegalArgumentException("Unsupported type")
     }
     return arr
 }
 
 inline fun <reified T : Number> decreasingSequence(arr: Array<T>): Array<T> {
-    var j = 0
-    for (i in arr.size - 1 downTo 0) {
-        arr[j] =
-            when (T::class) {
-                Int::class -> i as T
-                Double::class -> i.toDouble() as T
-                else -> throw IllegalArgumentException("Unsupported type")
+    when (T::class) {
+        Int::class -> {
+            for (i in arr.indices) {
+                arr[i] = (arr.size - 1 - i) as T
             }
-        j++
+        }
+
+        Double::class -> {
+            for (i in arr.indices) {
+                arr[i] = (arr.size - 1 - i).toDouble() as T
+            }
+        }
+
+        else -> throw IllegalArgumentException("Unsupported type")
     }
     return arr
 }
@@ -33,13 +45,25 @@ inline fun <reified T : Number> randomSequence(
     max: T,
     min: T,
 ): Array<T> {
-    for (i in arr.indices) {
-        arr[i] =
-            when (T::class) {
-                Int::class -> Random.nextInt(min.toInt(), max.toInt()) as T
-                Double::class -> Random.nextDouble(min.toDouble(), max.toDouble()) as T
-                else -> throw IllegalArgumentException("Unsupported type")
+    val minInt = min.toInt()
+    val maxInt = max.toInt()
+    val minDouble = min.toDouble()
+    val maxDouble = max.toDouble()
+
+    when (T::class) {
+        Int::class -> {
+            for (i in arr.indices) {
+                arr[i] = Random.nextInt(minInt, maxInt) as T
             }
+        }
+
+        Double::class -> {
+            for (i in arr.indices) {
+                arr[i] = Random.nextDouble(minDouble, maxDouble) as T
+            }
+        }
+
+        else -> throw IllegalArgumentException("Unsupported type")
     }
     return arr
 }
@@ -49,18 +73,22 @@ inline fun <reified T : Number> sawtoothSequence(
     interval: Int,
     min: T,
 ): Array<T> {
-    var j = min.toInt()
-    for (i in arr.indices) {
-        arr[i] =
-            when (T::class) {
-                Int::class -> j as T
-                Double::class -> j.toDouble() as T
-                else -> throw IllegalArgumentException("Unsupported type")
+    val minValue = min.toInt()
+
+    when (T::class) {
+        Int::class -> {
+            for (i in arr.indices) {
+                arr[i] = (minValue + (i % interval)) as T
             }
-        j++
-        if (j > interval - 1) {
-            j = min.toInt()
         }
+
+        Double::class -> {
+            for (i in arr.indices) {
+                arr[i] = (minValue + (i % interval)).toDouble() as T
+            }
+        }
+
+        else -> throw IllegalArgumentException("Unsupported type")
     }
     return arr
 }
@@ -70,28 +98,39 @@ inline fun <reified T : Number> sinusoidalSequence(
     max: T,
     min: T,
 ): Array<T> {
-    var j = max.toInt()
-    var isCoursent = false
+    val maxValue = max.toInt()
+    val minValue = min.toInt()
+    val range = maxValue - minValue
+    val period = 2 * range
 
-    for (i in arr.indices) {
-        arr[i] =
-            when (T::class) {
-                Int::class -> j as T
-                Double::class -> j.toDouble() as T
-                else -> throw IllegalArgumentException("Unsupported type")
+    when (T::class) {
+        Int::class -> {
+            for (i in arr.indices) {
+                val position = i % period
+                val value =
+                    if (position < range) {
+                        minValue + position
+                    } else {
+                        maxValue - (position - range)
+                    }
+                arr[i] = value as T
             }
-
-        if (isCoursent) {
-            j++
-        } else {
-            j--
         }
 
-        if (j == max.toInt()) {
-            isCoursent = false
-        } else if (j == min.toInt()) {
-            isCoursent = true
+        Double::class -> {
+            for (i in arr.indices) {
+                val position = i % period
+                val value =
+                    if (position < range) {
+                        minValue + position
+                    } else {
+                        maxValue - (position - range)
+                    }
+                arr[i] = value.toDouble() as T
+            }
         }
+
+        else -> throw IllegalArgumentException("Unsupported type")
     }
     return arr
 }
@@ -102,25 +141,30 @@ inline fun <reified T : Number> staggeredSequence(
     delta: T,
     start: T,
 ): Array<T> {
-    var min = start.toInt()
-    var max = start.toInt() + delta.toInt()
-    var j = 0
+    val startValue = start.toInt()
+    val deltaValue = delta.toInt()
 
-    for (i in arr.indices) {
-        arr[i] =
-            when (T::class) {
-                Int::class -> Random.nextInt(min, max) as T
-                Double::class -> Random.nextDouble(min.toDouble(), max.toDouble()) as T
-                else -> throw IllegalArgumentException("Unsupported type")
+    when (T::class) {
+        Int::class -> {
+            for (i in arr.indices) {
+                val intervalIndex = i / interval
+                val min = startValue + intervalIndex * deltaValue
+                val max = min + deltaValue
+                arr[i] = Random.nextInt(min, max) as T
             }
-        j++
-        if (j == interval) {
-            min += delta.toInt()
-            max += delta.toInt()
-            j = 0
         }
-    }
 
+        Double::class -> {
+            for (i in arr.indices) {
+                val intervalIndex = i / interval
+                val min = startValue + intervalIndex * deltaValue
+                val max = min + deltaValue
+                arr[i] = Random.nextDouble(min.toDouble(), max.toDouble()) as T
+            }
+        }
+
+        else -> throw IllegalArgumentException("Unsupported type")
+    }
     return arr
 }
 
@@ -129,18 +173,29 @@ inline fun <reified T : Number> quasiOrderedSequence(
     start: T,
     delta: T,
 ): Array<T> {
-    var min = start.toInt() - delta.toInt()
-    var max = start.toInt() + delta.toInt()
+    val startValue = start.toInt()
+    val deltaValue = delta.toInt()
 
-    for (i in arr.indices) {
-        arr[i] =
-            when (T::class) {
-                Int::class -> Random.nextInt(min, max) as T
-                Double::class -> Random.nextDouble(min.toDouble(), max.toDouble()) as T
-                else -> throw IllegalArgumentException("Unsupported type")
+    when (T::class) {
+        Int::class -> {
+            for (i in arr.indices) {
+                val baseValue = startValue + i * deltaValue
+                val min = baseValue - deltaValue
+                val max = baseValue + deltaValue
+                arr[i] = Random.nextInt(min, max) as T
             }
-        min += delta.toInt()
-        max += delta.toInt()
+        }
+
+        Double::class -> {
+            for (i in arr.indices) {
+                val baseValue = startValue + i * deltaValue
+                val min = baseValue - deltaValue
+                val max = baseValue + deltaValue
+                arr[i] = Random.nextDouble(min.toDouble(), max.toDouble()) as T
+            }
+        }
+
+        else -> throw IllegalArgumentException("Unsupported type")
     }
     return arr
 }
@@ -149,7 +204,7 @@ fun main() {
     print("Введите размер массива: ")
     val size = readln().toInt()
     val min = 0
-    val max = 100
+    val max = 10
     val interval = 10
     val delta = 10
     val start = 0
