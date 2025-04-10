@@ -53,7 +53,8 @@ fun sawtoothSequence(
 ) {
     var interval = max - min + 1
     for (i in array.indices) {
-        array[i] = min + (i % interval)
+        val step = i % interval
+        array[i] = min + step
     }
 }
 
@@ -62,10 +63,10 @@ fun sawtoothSequence(
     min: Double = 0.0,
     max: Double = 100.0,
 ) {
-    var interval = (max - min).toInt() + 1
+    var interval = max - min
     for (i in array.indices) {
-        val step = i % interval
-        array[i] = min + step.toDouble()
+        val step = i.toDouble() % interval
+        array[i] = min + step
     }
 }
 
@@ -107,14 +108,61 @@ fun sinusoidalSequence(
     }
 }
 
-fun stepwiseSequence() {
+fun stepwiseSequence(
+    array: IntArray,
+    interval: Int,
+    step: Int,
+    initialMin: Int,
+    initialMax: Int,
+) {
+    var currentMin = initialMin
+    var currentMax = initialMax
+    val size = array.size
+    var i = 0
+
+    while (i < size) {
+        val chunkEndIndex = minOf(i + interval, size)
+
+        while (i < chunkEndIndex) {
+            array[i] = Random.nextInt(currentMin, currentMax)
+            i++
+        }
+
+        currentMin += step
+        currentMax += step
+    }
+}
+
+fun stepwiseSequence(
+    array: DoubleArray,
+    interval: Int,
+    step: Double,
+    initialMin: Double,
+    initialMax: Double,
+) {
+    var currentMin = initialMin
+    var currentMax = initialMax
+    val size = array.size
+    var i = 0
+
+    while (i < size) {
+        val chunkEndIndex = minOf(i + interval, size)
+
+        while (i < chunkEndIndex) {
+            array[i] = Random.nextDouble(currentMin, currentMax)
+            i++
+        }
+
+        currentMin += step
+        currentMax += step
+    }
 }
 
 fun main() {
-    val intArray = IntArray(11)
-    val doubleArray = DoubleArray(20)
-    sinusoidalSequence(intArray, 0, 5)
+    val intArray = IntArray(40)
+    val doubleArray = DoubleArray(40)
+    stepwiseSequence(intArray, interval = 10, step = 10, 0, 10)
     println(intArray.joinToString(", "))
-    sinusoidalSequence(doubleArray, 0.6, 5.6)
+    stepwiseSequence(doubleArray, interval = 10, step = 10.0, 0.0, 10.0)
     println(doubleArray.joinToString(", "))
 }
