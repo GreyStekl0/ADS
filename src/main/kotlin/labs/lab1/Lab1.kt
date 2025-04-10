@@ -1,6 +1,7 @@
 package labs.lab1
 
 import kotlin.random.Random
+import kotlin.system.measureNanoTime
 
 fun orderedSequence(array: IntArray) {
     for (i in array.indices) {
@@ -98,7 +99,7 @@ fun sinusoidalSequence(
     val cycleLen = 2.0 * range
 
     for (i in array.indices) {
-        val posInCycle = i % cycleLen
+        val posInCycle = i.toDouble() % cycleLen
 
         if (posInCycle < range) {
             array[i] = max - posInCycle
@@ -188,11 +189,161 @@ fun quasiOrderedSequence(
     }
 }
 
+inline fun <T> measureAverageTimeWithWarmup(
+    arraySize: Int,
+    warmupIterations: Int,
+    measurementIterations: Int,
+    prepareArray: (Int) -> T, // T будет либо IntArray, либо DoubleArray
+    operation: (T) -> Unit,
+): Long {
+    // --- Фаза прогрева ---
+    repeat(warmupIterations) {
+        val array = prepareArray(arraySize)
+        operation(array)
+    }
+
+    // --- Фаза замера ---
+    var totalTime = 0L
+    repeat(measurementIterations) {
+        val array = prepareArray(arraySize) // Создаем массив ПЕРЕД замером
+        val time =
+            measureNanoTime {
+                operation(array) // Выполняем операцию
+            }
+        totalTime += time
+    }
+    return totalTime / measurementIterations
+}
+
+// --- Основная часть для запуска тестов ---
+
 fun main() {
-    val intArray = IntArray(40)
-    val doubleArray = DoubleArray(40)
-    quasiOrderedSequence(intArray, interval = 5, 10, 30)
-    println(intArray.joinToString(", "))
-    stepwiseSequence(doubleArray, interval = 10, step = 10.0, 0.0, 10.0)
-    println(doubleArray.joinToString(", "))
+    val arraySize = 500_000 // Размер массива
+    val warmupIterations = 50 // Количество итераций для прогрева
+    val measurementIterations = 100 // Количество итераций для замера (увеличил для стабильности)
+
+    println("Measuring average execution time for array size $arraySize")
+    println("Warmup iterations: $warmupIterations")
+    println("Measurement iterations: $measurementIterations\n")
+
+    // ... (определение параметров minInt, maxInt и т.д. остается таким же) ...
+    val minInt = 0
+    val maxInt = 1000
+    val minDouble = 0.0
+    val maxDouble = 1000.0
+    val stepIntInterval = arraySize / 50
+    val stepIntStep = 20
+    val stepDoubleInterval = arraySize / 50
+    val stepDoubleStep = 20.0
+    val quasiIntInterval = 1
+    val quasiIntMin = 0
+    val quasiIntMax = 10
+    val quasiDoubleInterval = 0.01
+    val quasiDoubleMin = 0.0
+    val quasiDoubleMax = 1.0
+
+    val results = mutableMapOf<String, Long>()
+
+    // --- Замеры для IntArray ---
+    results["orderedSequence (Int)"] =
+        measureAverageTimeWithWarmup(arraySize, warmupIterations, measurementIterations, ::IntArray) {
+            orderedSequence(
+                it,
+            )
+        }
+    results["inverselyOrderedSequence (Int)"] =
+        measureAverageTimeWithWarmup(
+            arraySize,
+            warmupIterations,
+            measurementIterations,
+            ::IntArray,
+        ) { inverselyOrderedSequence(it) }
+    results["randomSequence (Int)"] =
+        measureAverageTimeWithWarmup(
+            arraySize,
+            warmupIterations,
+            measurementIterations,
+            ::IntArray,
+        ) { randomSequence(it, minInt, maxInt) }
+    results["sawtoothSequence (Int)"] =
+        measureAverageTimeWithWarmup(
+            arraySize,
+            warmupIterations,
+            measurementIterations,
+            ::IntArray,
+        ) { sawtoothSequence(it, minInt, maxInt) }
+    results["sinusoidalSequence (Int)"] =
+        measureAverageTimeWithWarmup(
+            arraySize,
+            warmupIterations,
+            measurementIterations,
+            ::IntArray,
+        ) { sinusoidalSequence(it, minInt, maxInt) }
+    results["stepwiseSequence (Int)"] =
+        measureAverageTimeWithWarmup(arraySize, warmupIterations, measurementIterations, ::IntArray) {
+            stepwiseSequence(
+                it,
+                stepIntInterval,
+                stepIntStep,
+                minInt,
+                maxInt / 10,
+            )
+        }
+    results["quasiOrderedSequence (Int)"] =
+        measureAverageTimeWithWarmup(arraySize, warmupIterations, measurementIterations, ::IntArray) {
+            quasiOrderedSequence(it, quasiIntInterval, quasiIntMin, quasiIntMax)
+        }
+
+    // --- Замеры для DoubleArray ---
+    results["orderedSequence (Double)"] =
+        measureAverageTimeWithWarmup(
+            arraySize,
+            warmupIterations,
+            measurementIterations,
+            ::DoubleArray,
+        ) { orderedSequence(it) }
+    results["inverselyOrderedSequence (Double)"] =
+        measureAverageTimeWithWarmup(
+            arraySize,
+            warmupIterations,
+            measurementIterations,
+            ::DoubleArray,
+        ) { inverselyOrderedSequence(it) }
+    results["randomSequence (Double)"] =
+        measureAverageTimeWithWarmup(
+            arraySize,
+            warmupIterations,
+            measurementIterations,
+            ::DoubleArray,
+        ) { randomSequence(it, minDouble, maxDouble) }
+    results["sawtoothSequence (Double)"] =
+        measureAverageTimeWithWarmup(arraySize, warmupIterations, measurementIterations, ::DoubleArray) {
+            sawtoothSequence(it, minDouble, maxDouble)
+        }
+    results["sinusoidalSequence (Double)"] =
+        measureAverageTimeWithWarmup(arraySize, warmupIterations, measurementIterations, ::DoubleArray) {
+            sinusoidalSequence(it, minDouble, maxDouble)
+        }
+    results["stepwiseSequence (Double)"] =
+        measureAverageTimeWithWarmup(arraySize, warmupIterations, measurementIterations, ::DoubleArray) {
+            stepwiseSequence(
+                it,
+                stepDoubleInterval,
+                stepDoubleStep,
+                minDouble,
+                maxDouble / 10.0,
+            )
+        }
+    results["quasiOrderedSequence (Double)"] =
+        measureAverageTimeWithWarmup(arraySize, warmupIterations, measurementIterations, ::DoubleArray) {
+            quasiOrderedSequence(it, quasiDoubleInterval, quasiDoubleMin, quasiDoubleMax)
+        }
+
+    // --- Вывод результатов ---
+    println("\n--- Results (Average time in milliseconds) ---")
+    // Внутри цикла вывода результатов:
+    results.forEach { (name, timeNano) ->
+        val timeMillisDouble = timeNano / 1_000_000.0 // Деление на double дает double
+        println("${name.padEnd(35)}: ${"%.3f".format(timeMillisDouble)} ms") // Форматируем double с 3 знаками
+    }
 }
