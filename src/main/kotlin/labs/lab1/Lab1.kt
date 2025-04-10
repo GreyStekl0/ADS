@@ -158,10 +158,40 @@ fun stepwiseSequence(
     }
 }
 
+fun quasiOrderedSequence(
+    array: IntArray,
+    interval: Int,
+    initialMin: Int,
+    initialMax: Int,
+) {
+    var currentMin = initialMin
+    var currentMax = initialMax
+    for (i in array.indices) {
+        array[i] = Random.nextInt(currentMin, currentMax)
+        currentMin += interval
+        currentMax += interval
+    }
+}
+
+fun quasiOrderedSequence(
+    array: DoubleArray,
+    interval: Double,
+    initialMin: Double,
+    initialMax: Double,
+) {
+    var currentMin = initialMin
+    var currentMax = initialMax
+    for (i in array.indices) {
+        array[i] = Random.nextDouble(currentMin, currentMax)
+        currentMin += interval
+        currentMax += interval
+    }
+}
+
 fun main() {
     val intArray = IntArray(40)
     val doubleArray = DoubleArray(40)
-    stepwiseSequence(intArray, interval = 10, step = 10, 0, 10)
+    quasiOrderedSequence(intArray, interval = 5, 10, 30)
     println(intArray.joinToString(", "))
     stepwiseSequence(doubleArray, interval = 10, step = 10.0, 0.0, 10.0)
     println(doubleArray.joinToString(", "))
