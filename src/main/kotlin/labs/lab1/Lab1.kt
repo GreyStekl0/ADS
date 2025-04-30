@@ -52,7 +52,7 @@ fun sawtoothSequence(
     min: Int = 0,
     max: Int = 100,
 ) {
-    var interval = max - min + 1
+    val interval = max - min + 1
     for (i in array.indices) {
         val step = i % interval
         array[i] = min + step
@@ -64,7 +64,7 @@ fun sawtoothSequence(
     min: Double = 0.0,
     max: Double = 100.0,
 ) {
-    var interval = max - min
+    val interval = max - min
     for (i in array.indices) {
         val step = i.toDouble() % interval
         array[i] = min + step
@@ -218,7 +218,7 @@ inline fun <T> measureAverageTimeWithWarmup(
 // --- Основная часть для запуска тестов ---
 
 fun main() {
-    val arraySize = 500_000 // Размер массива
+    val arraySize = 5_000_000 // Размер массива
     val warmupIterations = 50 // Количество итераций для прогрева
     val measurementIterations = 100 // Количество итераций для замера (увеличил для стабильности)
 
