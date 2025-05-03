@@ -1,4 +1,10 @@
-package labs.lab2
+package labs.lab2.var7
+
+import labs.lab1.inverselyOrderedSequence
+import labs.lab1.orderedSequence
+import labs.lab1.randomSequence
+import labs.lab1.stepwiseSequence
+import kotlin.system.measureNanoTime
 
 /**
  * Сортировка вставками с сигнальным ключом на IntArray.
@@ -43,9 +49,11 @@ fun binaryInsertionSort(arr: IntArray) {
         val insertionPoint = if (idx >= 0) idx else -idx - 1
 
         // 2) сдвигаем элементы вправо
-        for (j in i downTo insertionPoint + 1) {
-            arr[j] = arr[j - 1]
-        }
+//        for (j in i downTo insertionPoint + 1) {
+//            arr[j] = arr[j - 1]
+//        }
+        arr.copyInto(arr, insertionPoint + 1, insertionPoint, i)
+
         // 3) вставляем ключ
         arr[insertionPoint] = key
     }
@@ -150,22 +158,87 @@ private fun msdRadixSortRecursive(
     }
 }
 
+// Функция для измерения времени сортировки с разогревом и усреднением
+fun measureSortTimeSeconds(
+    prepareArray: IntArray,
+    sort: (IntArray) -> Unit,
+    warmupRuns: Int = 1,
+    measureRuns: Int = 3,
+) {
+    // Прогрев
+    repeat(warmupRuns) {
+        val arr = prepareArray.copyOf()
+        sort(arr)
+    }
+    // Замеры
+    var totalTime = 0L
+    repeat(measureRuns) {
+        val arr = prepareArray.copyOf()
+        val t = measureNanoTime { sort(arr) }
+        totalTime += t
+    }
+    // Расчет среднего времени в наносекундах
+    val avgNanos = totalTime / measureRuns
+
+    // Расчет целых секунд и оставшихся миллисекунд
+    val wholeSeconds = avgNanos / 1_000_000_000
+    val remainingNanos = avgNanos % 1_000_000_000
+    val millisPart = remainingNanos / 1_000_000
+
+    // Вывод в формате "X сек YYY мс"
+    // %03d форматирует миллисекунды с ведущими нулями до 3 знаков
+    println("Среднее время: %d сек %03d мс".format(wholeSeconds, millisPart))
+}
+
 // Пример использования:
 fun main() {
-    val data = intArrayOf(170, 45, 75, -90, -1, 0, 802, 24, 2, 66, -256, 1024, -1024)
-    println("Original array: ${data.contentToString()}")
+    val arraySize = 50_000
+    val warmupIterations = 2
+    val measurementIterations = 3
 
-    // Используем 8 бит (байт) для сортировки
-    msdRadixSort(data, 8)
-    println("Sorted array (8-bit groups): ${data.contentToString()}")
+    // Генерируем базовые массивы
+    val orderedArr = IntArray(arraySize).also { orderedSequence(it) }
+    val inverseArr = IntArray(arraySize).also { inverselyOrderedSequence(it) }
+    val randomArr = IntArray(arraySize).also { randomSequence(it) }
+    val stepwiseArr = IntArray(arraySize).also { stepwiseSequence(it, arraySize / 50, 20, 0, 1000) }
 
-    // Можно попробовать с другим размером группы, например 4 бита
-    val data2 = intArrayOf(170, 45, 75, -90, -1, 0, 802, 24, 2, 66, -256, 1024, -1024)
-    msdRadixSort(data2, 4)
-    println("Sorted array (4-bit groups): ${data2.contentToString()}")
+    // Определяем названия для массивов и сортировок для более читаемого вывода
+    val arrayMap =
+        mapOf(
+            "Упорядоченный массив" to orderedArr,
+            "Обратно упорядоченный массив" to inverseArr,
+            "Случайный массив" to randomArr,
+            "Ступенчатый массив" to stepwiseArr,
+        )
 
-    // И с 1 битом (будет много рекурсии)
-    val data3 = intArrayOf(170, 45, 75, -90, -1, 0, 802, 24, 2, 66, -256, 1024, -1024)
-    msdRadixSort(data3, 1)
-    println("Sorted array (1-bit groups): ${data3.contentToString()}")
+    val sortMap =
+        mapOf(
+            "Сортировка вставками (сигнальный ключ)" to ::sentinelInsertionSort,
+            "Бинарная сортировка вставками" to ::binaryInsertionSort,
+            "MSD поразрядная сортировка (8 бит)" to { arr: IntArray -> msdRadixSort(arr, 8) },
+            "MSD поразрядная сортировка (4 бита)" to { arr: IntArray -> msdRadixSort(arr, 4) },
+            "MSD поразрядная сортировка (2 бита)" to { arr: IntArray -> msdRadixSort(arr, 2) },
+            "MSD поразрядная сортировка (1 бит)" to { arr: IntArray -> msdRadixSort(arr, 1) },
+        )
+
+    println(
+        "\n--- Измерение времени сортировки " +
+            "(размер: $arraySize, прогрев: $warmupIterations, замеры: $measurementIterations) ---",
+    )
+
+// Итерируем сначала по типам массивов
+    for ((arrayName, arrayInstance) in arrayMap) {
+        println("\n--- Тип массива: $arrayName ---")
+        // Затем по типам сортировок для каждого массива
+        for ((sortName, sortFunction) in sortMap) {
+            print("${sortName.padEnd(40)}: ") // Выводим имя сортировки
+            // Вызываем функцию замера времени
+            measureSortTimeSeconds(
+                prepareArray = arrayInstance, // Передаем текущий экземпляр массива
+                sort = sortFunction, // Передаем текущую функцию сортировки
+                warmupRuns = warmupIterations,
+                measureRuns = measurementIterations,
+            )
+        }
+    }
 }
