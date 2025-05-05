@@ -11,7 +11,6 @@ import kotlin.system.measureNanoTime
  */
 fun sentinelInsertionSort(arr: IntArray) {
     val n = arr.size
-    if (n < 2) return
 
     // 1) Находим индекс минимального элемента
     var minIndex = 0
