@@ -176,40 +176,33 @@ fun measureSortTimeSeconds(
         val t = measureNanoTime { sort(arr) }
         totalTime += t
     }
-    // Расчет среднего времени в наносекундах
-    val avgNanos = totalTime / measureRuns
+    // Расчет среднего времени в миллисекундах
+    val totalMillis = totalTime / measureRuns / 1_000_000.0
 
-    // Расчет целых секунд и оставшихся миллисекунд
-    val wholeSeconds = avgNanos / 1_000_000_000
-    val remainingNanos = avgNanos % 1_000_000_000
-    val millisPart = remainingNanos / 1_000_000
-
-    // Вывод в формате "X сек YYY мс"
-    // %03d форматирует миллисекунды с ведущими нулями до 3 знаков
-    println("Среднее время: %d сек %03d мс".format(wholeSeconds, millisPart))
+    // Вывод результата с округлением до 3 знаков
+    println("%.3f мс".format(totalMillis))
 }
 
 // Пример использования:
 fun main() {
-    val arraySize = 50_000
+    val arraySizes = arrayOf(5000, 10000, 20000, 30000, 40000, 50000)
     val warmupIterations = 2
     val measurementIterations = 3
 
-    // Генерируем базовые массивы
-    val orderedArr = IntArray(arraySize).also { orderedSequence(it) }
-    val inverseArr = IntArray(arraySize).also { inverselyOrderedSequence(it) }
-    val randomArr = IntArray(arraySize).also { randomSequence(it) }
-    val stepwiseArr = IntArray(arraySize).also { stepwiseSequence(it, arraySize / 50, 20, 0, 1000) }
-
-    // Определяем названия для массивов и сортировок для более читаемого вывода
-    val arrayMap =
+    // Определяем map функций-генераторов для разных типов массивов
+    val arrayGenerators =
         mapOf(
-            "Упорядоченный массив" to orderedArr,
-            "Обратно упорядоченный массив" to inverseArr,
-            "Случайный массив" to randomArr,
-            "Ступенчатый массив" to stepwiseArr,
+            "Упорядоченный массив" to { size: Int -> IntArray(size).also { orderedSequence(it) } },
+            "Обратно упорядоченный массив" to { size: Int -> IntArray(size).also { inverselyOrderedSequence(it) } },
+            "Случайный массив" to { size: Int -> IntArray(size).also { randomSequence(it) } },
+            "Ступенчатый массив" to { size: Int ->
+                IntArray(size).also {
+                    stepwiseSequence(it, size / 50, 20, 0, 1000)
+                }
+            },
         )
 
+    // Определяем map функций сортировки и их названий
     val sortMap =
         mapOf(
             "Сортировка вставками (сигнальный ключ)" to ::sentinelInsertionSort,
@@ -220,24 +213,22 @@ fun main() {
             "MSD поразрядная сортировка (1 бит)" to { arr: IntArray -> msdRadixSort(arr, 1) },
         )
 
-    println(
-        "\n--- Измерение времени сортировки " +
-            "(размер: $arraySize, прогрев: $warmupIterations, замеры: $measurementIterations) ---",
-    )
+    println("\n--- Измерение времени сортировки (прогрев: $warmupIterations, замеры: $measurementIterations) ---")
 
-// Итерируем сначала по типам массивов
-    for ((arrayName, arrayInstance) in arrayMap) {
+    for ((arrayName, generator) in arrayGenerators) {
         println("\n--- Тип массива: $arrayName ---")
-        // Затем по типам сортировок для каждого массива
-        for ((sortName, sortFunction) in sortMap) {
-            print("${sortName.padEnd(40)}: ") // Выводим имя сортировки
-            // Вызываем функцию замера времени
-            measureSortTimeSeconds(
-                prepareArray = arrayInstance, // Передаем текущий экземпляр массива
-                sort = sortFunction, // Передаем текущую функцию сортировки
-                warmupRuns = warmupIterations,
-                measureRuns = measurementIterations,
-            )
+        for ((sortName, sortFunc) in sortMap) {
+            println("\n--- Сортировка: $sortName ---")
+            for (size in arraySizes) {
+                val arr = generator(size)
+                print("размер массива ${size.toString().padEnd(5)}: ")
+                measureSortTimeSeconds(
+                    prepareArray = arr,
+                    sort = sortFunc,
+                    warmupRuns = warmupIterations,
+                    measureRuns = measurementIterations,
+                )
+            }
         }
     }
 }

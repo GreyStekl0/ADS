@@ -85,88 +85,6 @@ fun binaryInsertionSortCount(arr: IntArray): Long {
     return count
 }
 
-class MsdRadixSorter(
-    private val bitSize: Int = 8,
-) {
-    // Сюда накапливаем все сравнения
-    private var comparisonCount = 0L
-
-    fun sort(arr: IntArray): Long {
-        // 1) Преобразование для signed→unsigned
-        val signFlip = Int.MIN_VALUE
-        for (i in arr.indices) {
-            arr[i] = arr[i] xor signFlip
-        }
-
-        // 2) Самая младшая «точка входа»
-        val buffer = IntArray(arr.size)
-        val startBit = 31
-        msdRadixSortRecursive(arr, 0, arr.lastIndex, startBit, buffer)
-
-        // 3) Обратное преобразование
-        for (i in arr.indices) {
-            arr[i] = arr[i] xor signFlip
-        }
-
-        println("Total comparisons: $comparisonCount")
-        return comparisonCount
-    }
-
-    private fun msdRadixSortRecursive(
-        arr: IntArray,
-        low: Int,
-        high: Int,
-        bitPosition: Int,
-        buffer: IntArray,
-    ) {
-        // 1. Проверяем базовые случаи
-        comparisonCount++ // для high <= low
-        if (high <= low) return
-
-        comparisonCount++ // для bitPosition < 0
-        if (bitPosition < 0) return
-
-        val bucketCount = 1 shl bitSize
-        val mask = bucketCount - 1
-        val shift = bitPosition - bitSize + 1
-
-        // Подсчёт и смещения как у вас
-        val count = IntArray(bucketCount)
-        val offset = IntArray(bucketCount)
-        for (i in low..high) {
-            val idx = (arr[i] ushr shift) and mask
-            count[idx]++
-        }
-        offset[0] = low
-        for (k in 1 until bucketCount) {
-            offset[k] = offset[k - 1] + count[k - 1]
-        }
-        val origOffset = offset.copyOf()
-
-        // Распределение
-        for (i in low..high) {
-            val idx = (arr[i] ushr shift) and mask
-            buffer[offset[idx]] = arr[i]
-            offset[idx]++
-        }
-        System.arraycopy(buffer, low, arr, low, high - low + 1)
-
-        // Рекурсивные вызовы по корзинам
-        val nextBit = bitPosition - bitSize
-        for (k in 0 until bucketCount) {
-            val start = origOffset[k]
-            // конец корзины
-            val end = if (k + 1 < bucketCount) origOffset[k + 1] else high + 1
-            val size = end - start
-
-            comparisonCount++ // для bucketSize > 1
-            if (size > 1) {
-                msdRadixSortRecursive(arr, start, end - 1, nextBit, buffer)
-            }
-        }
-    }
-}
-
 // Главная функция, возвращающая количество операций сравнения
 fun msdRadixSortCount(
     arr: IntArray,
@@ -266,23 +184,29 @@ private fun msdRadixSortRecursive(
 }
 
 fun main() {
-    val arraySize = 100_000
+    // Определяем размеры массивов для тестирования
+    val arraySizes = arrayOf(5000, 10000, 20000, 30000, 40000, 50000)
 
-    // Генерируем базовые массивы
-    val orderedArr = IntArray(arraySize).also { orderedSequence(it) }
-    val inverseArr = IntArray(arraySize).also { inverselyOrderedSequence(it) }
-    val randomArr = IntArray(arraySize).also { randomSequence(it) }
-    val stepwiseArr = IntArray(arraySize).also { stepwiseSequence(it, arraySize / 50, 20, 0, 1000) }
-
-    // Определяем названия для массивов и сортировок для более читаемого вывода
-    val arrayMap =
+    // Определяем map функций-генераторов для разных типов массивов
+    val arrayGenerators =
         mapOf(
-            "Упорядоченный массив" to orderedArr,
-            "Обратно упорядоченный массив" to inverseArr,
-            "Случайный массив" to randomArr,
-            "Ступенчатый массив" to stepwiseArr,
+            "Упорядоченный массив" to { size: Int -> IntArray(size).also { orderedSequence(it) } },
+            "Обратно упорядоченный массив" to { size: Int -> IntArray(size).also { inverselyOrderedSequence(it) } },
+            "Случайный массив" to { size: Int -> IntArray(size).also { randomSequence(it) } },
+            "Ступенчатый массив" to { size: Int ->
+                IntArray(size).also {
+                    stepwiseSequence(
+                        it,
+                        size / 50,
+                        20,
+                        0,
+                        1000,
+                    )
+                }
+            },
         )
 
+    // Определяем map функций сортировки и их названий
     val sortMap =
         mapOf(
             "Сортировка вставками (сигнальный ключ)" to ::sentinelInsertionSortCount,
@@ -293,13 +217,15 @@ fun main() {
             "MSD поразрядная сортировка (1 бит)" to { arr: IntArray -> msdRadixSortCount(arr, 1) },
         )
 
-    // Сортируем и выводим результаты
-    for ((arrayName, array) in arrayMap) {
+    for ((arrayName, generator) in arrayGenerators) {
         println("\n--- Тип массива: $arrayName ---")
         for ((sortName, sortFunc) in sortMap) {
-            val arrCopy = array.copyOf()
-            val count = sortFunc(arrCopy)
-            println("${sortName.padEnd(40)}: $count операций сравнения")
+            println("\n--- Сортировка: $sortName ---")
+            for (size in arraySizes) {
+                val arr = generator(size)
+                val count = sortFunc(arr)
+                println("размер массива ${size.toString().padEnd(5)}: $count операций сравнения")
+            }
         }
     }
 }
