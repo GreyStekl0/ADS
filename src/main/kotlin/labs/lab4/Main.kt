@@ -65,19 +65,21 @@ fun fill(arr: CharArray) {
 fun main() {
     val warmupRuns = 5
     val measurementRuns = 10
+    val kmpResult = hashMapOf<Int, MutableList<Long>>()
+    val indexOfResult = hashMapOf<Int, MutableList<Long>>()
+    val textSizes = (1000..10000 step 1000).toList()
 
     for (i in 1..10) {
         val pSize = i
-        println("--- Pattern size: $pSize ---\n")
-        println("--- KMP Search Performance ---")
-        for (i in 1000..10000 step 1000) {
-            val chars = CharArray(i)
-            fill(chars)
-            val text = String(chars)
-
+        kmpResult[i] = mutableListOf()
+        indexOfResult[i] = mutableListOf()
+        for (j in textSizes) {
             val p = CharArray(pSize)
             fill(p)
             val pattern = String(p)
+            val chars = CharArray(j)
+            fill(chars)
+            val text = String(chars)
 
             repeat(warmupRuns) {
                 kmpSearch(text, pattern)
@@ -87,22 +89,8 @@ fun main() {
             repeat(measurementRuns) {
                 totalExecutionTimeNanoKmp += measureNanoTime { kmpSearch(text, pattern) }
             }
-            val averageTimeMsKmp = totalExecutionTimeNanoKmp / measurementRuns
-            println(
-                "KMP: Average execution time for text size $i: $averageTimeMsKmp ns",
-            )
-        }
-        println("------------------------------\n")
-
-        println("--- String.indexOf Performance ---")
-        for (i in 1000..10000 step 1000) {
-            val chars = CharArray(i)
-            fill(chars)
-            val text = String(chars)
-
-            val p = CharArray(pSize)
-            fill(p)
-            val pattern = String(p)
+            val averageTimeNanoKmp = totalExecutionTimeNanoKmp / measurementRuns
+            kmpResult[i]?.add(averageTimeNanoKmp)
 
             repeat(warmupRuns) {
                 text.indexOf(pattern)
@@ -112,11 +100,20 @@ fun main() {
             repeat(measurementRuns) {
                 totalExecutionTimeNanoIndexOf += measureNanoTime { text.indexOf(pattern) }
             }
-            val averageTimeMsIndexOf = totalExecutionTimeNanoIndexOf / measurementRuns
-            println(
-                "indexOf: Average execution time for text size $i: $averageTimeMsIndexOf ns",
-            )
+            val averageTimeNanoIndexOf = totalExecutionTimeNanoIndexOf / measurementRuns
+            indexOfResult[i]?.add(averageTimeNanoIndexOf)
         }
-        println("------------------------------\n")
+    }
+
+    println("Результаты измерений (среднее время в наносекундах):")
+    println("----------------------------------------------------")
+    println("Размер текста: ${textSizes.joinToString(" ") { String.format("%7d", it) }}")
+    println("----------------------------------------------------")
+
+    for (pSize in kmpResult.keys.sorted()) {
+        println("Размер шаблона: $pSize")
+        println("  KMP       : ${kmpResult[pSize]?.joinToString("") { String.format("%8d", it) }}")
+        println("  IndexOf   : ${indexOfResult[pSize]?.joinToString("") { String.format("%8d", it) }}")
+        println("----------------------------------------------------")
     }
 }
